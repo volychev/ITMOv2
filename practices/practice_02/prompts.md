@@ -1,17 +1,17 @@
 # Журнал экспериментов Практики 2
 
-- Выбранный слабый артефакт Практики 1:
-- Что в нём нужно улучшить:
-- Как поймём, что изменение полезно:
+- Выбранный слабый артефакт Практики 1: `tests_unit.md` и `problem.md`
+- Что в нём нужно улучшить: `tests_unit.md` содержит словесные описания вместо реального исполняемого кода тестов; `problem.md` не содержит конкретных шагов для замера baseline.
+- Как поймём, что изменение полезно: Юнит-тесты можно скопировать и запустить; в метриках появились понятные ручные инструкции, выполнимые за 1 день.
 
 | Техника | Файл эксперимента | Изменённый файл Практики 1 | Конкретное изменение | Проверка | Что отклонили |
 |---|---|---|---|---|---|
-| Few-shot | [`few_shot/experiment.md`](few_shot/experiment.md) |  |  |  |  |
-| R.C.T.F. | [`rctf/experiment.md`](rctf/experiment.md) |  |  |  |  |
-| Chain of Verification | [`chain_of_verification/experiment.md`](chain_of_verification/experiment.md) |  |  |  |  |
-| Tree of Thoughts | [`tree_of_thoughts/experiment.md`](tree_of_thoughts/experiment.md) |  |  |  |  |
-| RAG | [`rag/experiment.md`](rag/experiment.md) |  |  |  |  |
-| ReAct | [`react/experiment.md`](react/experiment.md) |  |  |  |  |
+| Few-shot | [`few_shot/experiment.md`](few_shot/experiment.md) | `tests_unit.md` | Сгенерированы реальные тесты на pytest с MagicMock | Вставлен рабочий код в `tests/test_review_service.py` | Слишком широкий `Exception` в `pytest.raises` |
+| R.C.T.F. | [`rctf/experiment.md`](rctf/experiment.md) | `problem.md` | Метрики переписаны с указанием методов замера (baseline на 30 PR) | Шаги замера реалистичны и не требуют дата-инженеров | Вводные слова и рассуждения модели (только таблица) |
+| Chain of Verification | [`chain_of_verification/experiment.md`](chain_of_verification/experiment.md) | `context.md` | К правилам в Context Pack добавлены явные ссылки на строки в `TRAINING_PR.diff` | Все 4 правила подтверждены номерами строк из diff | Ничего (прямые цитаты из кода) |
+| Tree of Thoughts | [`tree_of_thoughts/experiment.md`](tree_of_thoughts/experiment.md) | `adr.md` | Выбрана гибридная реализация SEC-1 (regex + Gitleaks) вместо самописных регулярок | Добавлена сравнительная таблица плюсов и минусов в ADR | Идею использовать только регулярки (ненадёжно) |
+| RAG | [`rag/experiment.md`](rag/experiment.md) | `tests_integration.md` | Интеграционные тесты привязаны ссылками к требованиям из `CASE.md` | Добавлена колонка со ссылкой на первоисточник | Ничего (жёсткие ссылки по правилам) |
+| ReAct | [`react/experiment.md`](react/experiment.md) | `analysis.md` | В схему TO BE добавлена проверка `OUT-1` и ответ `HTTP 422` при невалидном JSON от LLM | Логический пробел устранён (сломанный ответ не уйдёт ревьюеру) | Ничего |
 
 ## Независимое ревью
 
