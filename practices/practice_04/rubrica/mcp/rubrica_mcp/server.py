@@ -89,6 +89,29 @@ def _run(target: str, spec: str | None) -> dict:
     return payload
 
 
+def _error(message: str, *, target: str, spec: str, started: float) -> str:
+    """Ошибка входа возвращается как данные, а не как исключение.
+
+    MCP-клиент показывает `Error executing tool` без деталей, поэтому
+    бросать исключение здесь бессмысленно: агент не увидит причину.
+    """
+    return json.dumps(
+        {
+            "ok": False,
+            "error": message,
+            "target": target,
+            "spec": spec or None,
+            "findings": [],
+            "score": 0,
+            "max_score": 0,
+            "fix_hints": ["исправь вход и повтори вызов"],
+            "elapsed_ms": int((time.monotonic() - started) * 1000),
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
 @server.tool(
     name="rubrica_audit",
     title="Аудит папки сдачи по рубрике",
@@ -96,8 +119,8 @@ def _run(target: str, spec: str | None) -> dict:
         "Проверяет папку сдачи практики по рубрике YAML и возвращает вердикт: баллы, "
         "проваленные правила с пояснением, код возврата, предупреждения о секретах и "
         "подсказки, что чинить. Вызывай перед сдачей или перед коммитом. "
-        "Некорректный вход (нет папки, битая рубрика) возвращается как isError с текстом "
-        "ошибки, а не как пустой успешный отчёт."
+        "При негодном входе (нет папки, битая рубрика) возвращает JSON с ok=false и "
+        "полем error, где написано, что именно не так, — вместо пустого успешного отчёта."
     ),
 )
 def rubrica_audit(
@@ -114,9 +137,9 @@ def rubrica_audit(
     try:
         payload = _run(target, spec)
     except InputRejected as exc:
-        raise ValueError(str(exc)) from exc
+        return _error(str(exc), target=target, spec=spec, started=started)
     except SpecError as exc:
-        raise ValueError(f"рубрика непригодна: {exc}") from exc
+        return _error(f"рубрика непригодна: {exc}", target=target, spec=spec, started=started)
 
     payload["ok"] = payload["exit_code"] == 0
     payload["elapsed_ms"] = int((time.monotonic() - started) * 1000)
