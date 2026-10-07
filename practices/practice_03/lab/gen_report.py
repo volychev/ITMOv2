@@ -100,7 +100,18 @@ def main() -> None:
     lines.append(mod_exp.strip())
     lines.append("```")
 
-    Path(args.output).write_text("\n".join(lines), encoding="utf-8")
+    out_path = Path(args.output)
+    existing_content = out_path.read_text(encoding="utf-8") if out_path.exists() else ""
+    
+    user_sections = ""
+    if "## Обоснование выбора моделей" in existing_content:
+        user_sections = existing_content[existing_content.index("## Обоснование выбора моделей"):]
+        
+    final_text = "\n".join(lines)
+    if user_sections:
+        final_text += "\n\n" + user_sections
+        
+    out_path.write_text(final_text, encoding="utf-8")
     print(f"Saved {args.output}")
 
 
