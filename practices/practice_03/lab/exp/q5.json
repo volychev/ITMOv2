@@ -1,0 +1,40 @@
+{
+  "request": {
+    "model": "itmo-experiment",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Ты помощник по учебному проекту. Используй только переданный контекст.\nНе выдумывай CI, зависимости, функции или настройки.\nЕсли данных нет, напиши «В предоставленных материалах нет ответа».\nФормат: короткий ответ, затем основание из контекста.\n\n"
+      },
+      {
+        "role": "user",
+        "content": "===== demo/README.md =====\n# Notify Mini\nУчебный сервис подписки. Подписчики хранятся в памяти процесса.\nВ service.py функция subscribe добавляет непустое имя в множество.\nПовторное добавление имени не создаёт дубликат.\n\nПроверка: make test.\nЗависимости: стандартная библиотека Python 3.10+.\n\n\n\n===== demo/service.py =====\nsubscribers = set()\n\n\ndef subscribe(name):\n    if not name.strip():\n        raise ValueError(\"empty name\")\n    subscribers.add(name.strip())\n    return {\"subscribed\": True}\n\n\n\n===== demo/test_service.py =====\nimport unittest\nfrom service import subscribe, subscribers\n\n\nclass SubscribeTest(unittest.TestCase):\n    def setUp(self):\n        subscribers.clear()\n\n    def test_subscribe(self):\n        self.assertEqual(subscribe(\"Ann\"), {\"subscribed\": True})\n        self.assertEqual(subscribers, {\"Ann\"})\n\n    def test_empty(self):\n        with self.assertRaises(ValueError):\n            subscribe(\" \")\n\n    def test_duplicate(self):\n        subscribe(\"Ann\")\n        subscribe(\"Ann\")\n        self.assertEqual(len(subscribers), 1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n\n\n\n===== Makefile =====\n.PHONY: install test build-models build-agent build-experiment verify-models experiment report\ninstall:\n\t@python3 -c \"import sys; assert sys.version_info >= (3,10), 'Python 3.10+ required'; print('Standard library only: ready')\"\ntest: install\n\t$(MAKE) -C demo test\n\n# Build local Ollama models from Modelfiles\nbuild-models: build-agent build-experiment\n\nbuild-agent:\n\t@which ollama >/dev/null 2>&1 || { echo \"Ollama CLI not found. Install Ollama first: https://ollama.com\"; exit 1; }\n\tollama create itmo-agent -f Modelfile.agent\n\t@echo \"Built model: itmo-agent\"\n\nbuild-experiment:\n\t@which ollama >/dev/null 2>&1 || { echo \"Ollama CLI not found. Install Ollama first: https://ollama.com\"; exit 1; }\n\tollama create itmo-experiment -f Modelfile\n\t@echo \"Built model: itmo-experiment\"\n\n# Verify models exist locally\nverify-models:\n\t@which ollama >/dev/null 2>&1 || { echo \"Ollama CLI not found. Install Ollama first: https://ollama.com\"; exit 1; }\n\t@ollama show itmo-agent >/dev/null 2>&1 || { echo \"Model itmo-agent not found. Run: make build-agent\"; exit 1; }\n\t@ollama show itmo-experiment >/dev/null 2>&1 || { echo \"Model itmo-experiment not found. Run: make build-experiment\"; exit 1; }\n\t@echo \"Models present.\"\n\n# Run a pair of controlled experiments (baseline vs system prompt)\nexperiment: verify-models\n\t@mkdir -p exp\n\tpython3 experiment.py --mode baseline --model itmo-experiment --output exp/baseline.json\n\tpython3 experiment.py --mode system --model itmo-experiment --output exp/system.json\n\t@echo \"Experiment results saved under ./exp\"\n\n# Generate REPORT.md with local environment and model info (read-only usage)\nreport:\n\tpython3 gen_report.py --output REPORT.md\n\n\n===== demo/Makefile =====\n.PHONY: test\ntest:\n\tpython3 -m unittest -v\n\n\n\nСохраняются ли подписки после перезапуска процесса? Подтверди кодом."
+      }
+    ],
+    "stream": false,
+    "think": false,
+    "options": {
+      "temperature": 0.2,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 512
+    }
+  },
+  "response": {
+    "model": "itmo-experiment",
+    "created_at": "2026-10-07T15:55:27.057872461Z",
+    "message": {
+      "role": "assistant",
+      "content": "Нет, подписки не сохраняются после перезапуска процесса.\n\n**Основание из контекста:**\nВ файле `demo/README.md` прямо указано: «Подписчики хранятся в памяти процесса». Переменная `subscribers = set()` в файле `demo/service.py` является глобальной переменной модуля, которая инициализируется при запуске интерпретатора Python. При перезапуске процесса (например, через `python3 service.py`) этот код выполняется заново, переменная сбрасывается к пустому множеству `{}`, а данные о подписчиках теряются."
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 14464623404,
+    "load_duration": 1120017,
+    "prompt_eval_count": 880,
+    "prompt_eval_cached_count": 370,
+    "prompt_eval_duration": 5076396000,
+    "eval_count": 128,
+    "eval_duration": 9380455000
+  }
+}
