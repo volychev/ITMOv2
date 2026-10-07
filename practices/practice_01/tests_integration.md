@@ -1,6 +1,8 @@
 # Integration-проверки
 
-| Связь компонентов | Что может сломаться | Как воспроизводим | Ожидаемый результат | Evidence |
+Файл ведёт OpenCode. Обсудите с агентом содержание и проверьте предложенный diff. Все дополнения и исправления поручайте агенту в чате.
+
+| Связь компонентов | Что может сломаться | Как воспроизводим | Ожидаемый результат | Подтверждение |
 |---|---|---|---|---|
 | `FastAPI (create_review)` → `ReviewService.review` | `KeyError` на отсутствующем поле `diff` в payload → HTTP 500 вместо 422 | Отправить `POST /api/reviews` с `{}` (пустой body) | HTTP 422 Unprocessable Entity с описанием поля `diff` | `curl -X POST /api/reviews -d '{}'` → `{"detail": [...]}`, status 422 |
 | `ReviewService.review` → `LLM.generate` | Непойманное исключение LLM всплывает в API → HTTP 500 | Заменить LLM на тестовый стаб, бросающий `ConnectionError` | HTTP 503 с полем `error` (правило `REL-1`) | Интеграционный тест с фейковым LLM-клиентом через `app.dependency_overrides` |
