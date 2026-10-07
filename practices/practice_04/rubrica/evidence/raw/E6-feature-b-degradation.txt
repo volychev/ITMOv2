@@ -1,0 +1,17 @@
+### 1. без ключа
+audit exit_code: 2 | narrative: None | narrative_error: VSELLM_API_KEY не установлен — рецензия недоступна
+код возврата: 3
+
+### 2. ключ есть, зависимость недоступна
+audit: 14 / 17 exit 2 | narrative_error: недоступна зависимость: [Errno 111] Connection refused
+код возврата: 3
+
+### 3. без --narrative зависимость не трогается
+narrative: None | narrative_error: None
+код возврата: 2
+
+### 4. живой endpoint
+audit exit_code: 2 | narrative_error: None
+narrative: Короткий итог и приоритеты
+
+- Итог: 14/17, 1 блокер, 2 провала, exit_code=2. Базовые артефакты на месте: AGENTS.md, skill с референсами, хук, runner, собственный MCP подключён и исходники есть. .env в

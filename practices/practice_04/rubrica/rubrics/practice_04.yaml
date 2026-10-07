@@ -1,0 +1,84 @@
+id: practice_04
+title: Практика 4 — среда агента, skill и собственный MCP
+
+rules:
+  - id: agents_md_present
+    kind: file_exists
+    path: AGENTS.md
+    severity: blocker
+    title: Правила агента на месте
+    weight: 2
+
+  - id: agents_md_names_check
+    kind: file_contains
+    path: AGENTS.md
+    pattern: scripts/check\.sh
+    severity: major
+    title: В правилах названа рабочая команда проверки
+    weight: 2
+
+  - id: skill_defined
+    kind: dir_count
+    glob: .opencode/skills/*/SKILL.md
+    min_count: 1
+    severity: blocker
+    title: Skill лежит в .opencode/skills вместе с ресурсами
+    weight: 2
+
+  - id: skill_has_reference
+    kind: dir_count
+    glob: .opencode/skills/*/references/*.md
+    min_count: 1
+    severity: minor
+    title: У skill есть связанные reference-ресурсы
+    weight: 1
+
+  - id: hook_registered
+    kind: file_exists
+    path: .opencode/plugins/check-after-edit.js
+    severity: blocker
+    title: Hook после правки зарегистрирован
+    weight: 2
+
+  - id: mcp_server_declared
+    kind: file_contains
+    path: opencode.json
+    pattern: '"rubrica"'
+    severity: blocker
+    title: Собственный MCP подключён в opencode.json
+    weight: 2
+
+  - id: mcp_source_present
+    kind: file_exists
+    path: mcp/rubrica_mcp/server.py
+    severity: blocker
+    title: Исходники собственного MCP в сдаче
+    weight: 1
+
+  - id: runner_present
+    kind: file_exists
+    path: scripts/check.sh
+    severity: major
+    title: Runner проверок отдаётся вместе с работой
+    weight: 1
+
+  - id: evidence_transcripts
+    kind: dir_count
+    glob: evidence/*.md
+    min_count: 3
+    severity: major
+    title: Приложены подтверждения применения инструментов
+    weight: 2
+
+  - id: reflection_present
+    kind: file_exists
+    path: reflection.md
+    severity: blocker
+    title: Рефлексия написана
+    weight: 1
+
+  - id: no_stray_token
+    kind: file_missing
+    path: .env
+    severity: minor
+    title: Файл с ключами не попал в сдачу

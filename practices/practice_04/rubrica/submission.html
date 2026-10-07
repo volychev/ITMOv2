@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Практика 4 — среда агента, skill и собственный MCP</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --line: #262b36; --fg: #e6e8ee;
+    --muted: #99a1b3; --accent: #7cc4ff; --ok: #58d68d; --warn: #f5c26b;
+    --bad: #ec7063; --code: #11141a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.65 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 28px; margin-bottom: 40px; }
+  h1 { font-size: 30px; margin: 0 0 10px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0; }
+  h2 { font-size: 21px; margin: 44px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 17px; margin: 26px 0 8px; color: var(--accent); }
+  p, li { margin: 9px 0; }
+  ul { padding-left: 22px; }
+  code, pre { font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; }
+  code { background: var(--code); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 13.5px; }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: 0; padding: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; margin: 16px 0; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 20px; border: 1px solid var(--line); color: var(--muted); margin: 2px 4px 2px 0; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .score { font-size: 34px; font-weight: 700; color: var(--ok); }
+  .kicker { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+  nav a { margin-right: 16px; font-size: 14px; }
+  .links a { display: block; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">ITMO · AI engineering tools · Практика 4</div>
+  <h1>rubrica — аудитор папки сдачи: две фичи и среда агента</h1>
+  <p class="sub">Фича A — валидация входа. Фича B — деградация при отказе зависимости.
+  Среда: <code>AGENTS.md</code>, skill <code>submission-audit</code>, MCP <code>rubrica_audit</code>,
+  hook <code>check-after-edit</code>, runner <code>scripts/check.sh</code>.</p>
+  <p style="margin-top:18px">
+    <span class="score">17/17</span>
+    <span class="sub" style="margin-left:14px">рубрика пройдена полностью · 74 теста, OK</span>
+  </p>
+  <p style="margin-top:14px">
+    <a href="README.md">README</a> ·
+    <a href="reflection.md">reflection.md</a> ·
+    <a href="AGENTS.md">AGENTS.md</a> ·
+    <a href="docs/requirements.md">контракт</a> ·
+    <a href="docs/MCP.md">MCP</a> ·
+    <a href="docs/SKILL.md">skill</a> ·
+    <a href="docs/HOOK.md">hook</a> ·
+    <a href="docs/RUBRIC-MAP.md">рубрика</a> ·
+    <a href="docs/HANDOFF.md">handoff</a>
+  </p>
+</header>
+
+<nav>
+  <a href="#idea">идея</a><a href="#feature-a">фича A</a><a href="#feature-b">фича B</a>
+  <a href="#env">среда</a><a href="#mcp">MCP</a><a href="#skill">skill</a>
+  <a href="#hook">hook</a><a href="#evidence">подтверждения</a><a href="#reflection">рефлексия</a>
+</nav>
+
+<h2 id="idea">Идея проекта</h2>
+<p>Перед сдачей агент и человек сверяются с чек-листом из README глазами.
+Пропущенный обязательный файл или сломанная рубрика обнаруживаются на защите.
+<code>rubrica</code> превращает чек-лист в машинную проверку с кодом возврата,
+который одинаково понимают человек, агент и CI.</p>
+
+<pre><code>make install          # venv + зависимости
+sh scripts/check.sh   # проверки кода: compileall + 74 теста
+make audit            # аудит папки сдачи по рубрике
+opencode mcp list     # rubrica connected</code></pre>
+
+<div class="grid">
+  <div class="card"><strong>Фича A</strong><br><span class="sub">Валидация входа. Плохой вход отклоняется до чтения файлов сдачи и до любого сетевого вызова.</span></div>
+  <div class="card"><strong>Фича B</strong><br><span class="sub">Отказ LLM-зависимости не меняет вердикт аудита. Появляется код 3 и отдельное поле <code>narrative_error</code>.</span></div>
+  <div class="card"><strong>Среда</strong><br><span class="sub">Четыре подключения, каждое закрывает свой шаг задачи. Подробности — ниже.</span></div>
+</div>
+
+<h2 id="feature-a">Фича A — валидация входа</h2>
+<p>Аудит не начинается, пока не пройдены дешёвые локальные проверки.
+До этого момента <strong>ни одного чтения файла сдачи и ни одного сетевого запроса</strong>.</p>
+<table>
+  <tr><th>Отклоняется, если</th><th>Почему это важно</th></tr>
+  <tr><td>путь пустой, не существует или не папка</td><td>нет смысла аудитовать</td></tr>
+  <tr><td>путь указывает на корень ФС или <code>..</code></td><td>защита от «прошёл не по той папке»</td></tr>
+  <tr><td>в папке &gt; 5000 файлов или &gt; 64 МБ</td><td>признак, что аудитируется не сдача</td></tr>
+  <tr><td>рубрика — не YAML, пуста или структурно неверна</td><td>иначе аудит бессмысленен</td></tr>
+</table>
+<p>Рубрика проверяется целиком: все проблемы приходят одним списком,
+а не по одной за запуск.</p>
+<pre><code>$ .venv/bin/python -m rubrica.cli /no/such/dir
+ОТКАЗ: вход не прошёл валидацию: папка /no/such/dir не существует
+EXIT=2</code></pre>
+<p class="links">
+  <a href="src/rubrica/validate.py">→ src/rubrica/validate.py (валидация входа)</a>
+  <a href="src/rubrica/spec.py">→ src/rubrica/spec.py (валидация рубрики)</a>
+  <a href="tests/test_validate.py">→ tests/test_validate.py</a>
+  <a href="tests/test_spec.py">→ tests/test_spec.py</a>
+</p>
+
+<h2 id="feature-b">Фича B — деградация при отказе зависимости</h2>
+<p>Отчёт можно обогатить текстовой рецензией от внешнего
+OpenAI-совместимого endpoint. Отказ зависимости <strong>не имеет права
+изменить вердикт аудита</strong> — ни баллы, ни <code>exit_code</code>, ни
+<code>findings</code>.</p>
+<p>Граница между фичами проходит по файлам: <code>core.py</code> не содержит
+ни одного сетевого вызова, вся работа с внешним миром живёт в
+<code>narrative.py</code>.</p>
+<table>
+  <tr><th>Сценарий</th><th>Вердикт аудита</th><th>Код возврата</th><th>Что в отчёте</th></tr>
+  <tr><td>ключа нет</td><td>14/17, exit 2</td><td class="ok">3</td><td><code>VSELLM_API_KEY не установлен…</code></td></tr>
+  <tr><td>зависимость недоступна</td><td>14/17, exit 2</td><td class="ok">3</td><td><code>Connection refused</code></td></tr>
+  <tr><td>живой endpoint</td><td>14/17, exit 2</td><td class="warn">2</td><td>текст рецензии</td></tr>
+  <tr><td>без <code>--narrative</code></td><td>14/17, exit 2</td><td class="warn">2</td><td>зависимость не трогается</td></tr>
+</table>
+<pre><code>$ VSELLM_API_BASE="https://127.0.0.1:9/v1/chat/completions" \
+    .venv/bin/python -m rubrica.cli . --spec rubrics/practice_04.yaml --narrative --json
+audit: 14 / 17 exit 2
+narrative_error: недоступна зависимость: [Errno 111] Connection refused
+код возврата: 3</code></pre>
+<p class="links">
+  <a href="src/rubrica/narrative.py">→ src/rubrica/narrative.py</a>
+  <a href="tests/test_narrative.py">→ tests/test_narrative.py</a>
+  <a href="evidence/E6-feature-b-degradation.md">→ evidence/E6: четыре живых сценария</a>
+  <a href="evidence/raw-B-session.md">→ evidence/raw-B-session.md: сессия агента в worktree</a>
+</p>
+
+<h2 id="env">Среда агента: зачем какое подключение</h2>
+<table>
+  <tr><th>Подключение</th><th>Какой шаг задачи улучшает</th><th>Подтверждение</th></tr>
+  <tr><td><a href="AGENTS.md"><code>AGENTS.md</code></a></td>
+      <td>задаёт контракт, runner и границы до первой правки; агент назвал
+      <code>docs/requirements.md</code> и <code>sh scripts/check.sh</code> по
+      содержанию файла, а не выдумал</td>
+      <td><a href="evidence/E1-agents-skill-mcp.md">E1</a>, <a href="evidence/E5-hook-pass-by-rule.md">E5</a></td></tr>
+  <tr><td><a href=".opencode/skills/submission-audit/SKILL.md">skill <code>submission-audit</code></a></td>
+      <td>шаг «что ещё не сдано»: одна команда вместо ручного прохода по
+      чек-листу, с приоритетом блокеров</td>
+      <td><a href="evidence/E1-agents-skill-mcp.md">E1</a>, <a href="docs/SKILL.md">разбор</a></td></tr>
+  <tr><td>MCP <code>rubrica_audit</code></td>
+      <td>узнать вердикт прямо из чата, без второго терминала; ответ
+      структурирован, агент может сразу править файлы</td>
+      <td><a href="evidence/E2-mcp-error-input.md">E2</a></td></tr>
+  <tr><td>hook <code>check-after-edit</code></td>
+      <td>убирает шаг «не забудь прогнать проверку»: runner запускается по
+      событию правки, результат возвращается агенту</td>
+      <td><a href="evidence/E3-hook-fail.md">E3</a>, <a href="evidence/E5-hook-pass-by-rule.md">E5</a></td></tr>
+</table>
+<div class="card">
+  <strong>Почему подключений ровно четыре.</strong>
+  Каждое закрывает свой шаг: правила — границы, skill — процедуру, MCP —
+  способ узнать вердикт, hook — автоматическую проверку. Количество
+  подключений само по себе не даёт ничего: четвёртое подключение (например,
+  <code>references</code> как в Claude Code) я бы добавил только при реальном
+  дефиците контекста. Не добавлял.
+</div>
+
+<h2 id="mcp">Свой MCP: rubrica_audit</h2>
+<p>Один tool, локальный stdio-сервер. MCP-слой отвечает только за формат
+ответа и понятную ошибку — правила, веса и поиск секретов живут внутри
+<code>rubrica</code>.</p>
+<pre><code>MCPServer "rubrica"
+  └── tool rubrica_audit(target, spec="")
+        ├── validate_all(...)      фича A
+        ├── load_spec(...)
+        ├── audit(spec, target)    ядро
+        └── fix_hints(report)</code></pre>
+
+<h3>Корректный вход</h3>
+<pre><code>$ opencode mcp list
+●  ✓ rubrica connected
+
+TOOL rubrica_rubrica_audit args={"target": ".", "spec": "rubrics/practice_04.yaml"}
+{
+  "ok": true, "score": 17, "max_score": 17, "exit_code": 0,
+  "findings": [ … 11 правил … ],
+  "fix_hints": [],
+  "elapsed_ms": 12527
+}</code></pre>
+
+<h3>Ошибочный вход</h3>
+<pre><code>TOOL rubrica_rubrica_audit args={"target": "../no-such-folder"}
+{
+  "ok": false,
+  "error": "вход не прошёл валидацию: папка ../no-such-folder не существует",
+  "findings": [], "fix_hints": ["исправь вход и повтори вызов"]
+}
+
+TOOL rubrica_rubrica_audit args={"spec": "rubrics/missing.yaml", "target": "."}
+{
+  "ok": false,
+  "error": "файл рубрики rubrics/missing.yaml не найден",
+  "findings": [], "fix_hints": ["исправь вход и повтори вызов"]
+}</code></pre>
+<div class="card">
+  <strong>Деталь, которая стоила переделки.</strong>
+  Первая версия бросала <code>ValueError</code>. Opencode показывал агенту
+  <code>Error executing tool rubrica_audit</code> — без причины, и агент сделал
+  вывод, что сервер не подключён. Ошибка возвращается данными, а не исключением:
+  только так причина доходит до агента.
+</div>
+<p class="links">
+  <a href="mcp/rubrica_mcp/server.py">→ mcp/rubrica_mcp/server.py</a>
+  <a href="scripts/mcp-server.sh">→ scripts/mcp-server.sh</a>
+  <a href="docs/MCP.md">→ docs/MCP.md</a>
+  <a href="tests/test_mcp_tool.py">→ tests/test_mcp_tool.py (9 тестов)</a>
+</p>
+
+<h2 id="skill">Skill: submission-audit</h2>
+<pre><code>.opencode/skills/submission-audit/
+├── SKILL.md                  процедура из 5 шагов
+├── references/
+│   ├── exit-codes.md         что означает каждый код возврата
+│   ├── rubric-rules.md       11 правил рубрики с весами
+│   └── writing-rules.md      как писать и проверять новые правила
+└── scripts/run-audit.sh      аудит + разбор результата</code></pre>
+<p>Справочные данные вынесены в <code>references</code>, чтобы агент читал их
+по требованию, а не всегда. Триггеры выбора зашиты в <code>description</code>:
+«проверь сдачу», «готов ли я к сдаче», «что ещё не сдано».</p>
+<pre><code>$ opencode debug skill
+[{ "name": "submission-audit",
+   "location": ".../rubrica/.opencode/skills/submission-audit/SKILL.md" }]
+
+$ sh .opencode/skills/submission-audit/scripts/run-audit.sh . rubrics/practice_04.yaml
+… PASS по всем 11 правилам …
+ИТОГ: все правила пройдены, можно сдавать.</code></pre>
+<p class="links">
+  <a href=".opencode/skills/submission-audit/SKILL.md">→ SKILL.md</a>
+  <a href="docs/SKILL.md">→ docs/SKILL.md</a>
+</p>
+
+<h2 id="hook">Hook: check-after-edit</h2>
+<p>Подписывается на <code>tool.execute.after</code> и после каждой правки в
+<code>src/</code>, <code>tests/</code>, <code>mcp/</code> запускает
+<code>scripts/check.sh</code>, дописывая вывод в результат того же инструмента.</p>
+<pre><code>apply_patch → «Success. Updated the following files: …»
+            + ── check-after-edit: FAIL (exit 1) · scripts/check.sh после apply_patch: tests/test_core.py
+              ..................F..............................................
+              FAIL: test_weights_sum_into_score
+              AssertionError: 5 != 7
+              FAILED (failures=1)
+              Проверка красная. Runner под зелёный результат не трогаем
+              (docs/style-guide.md, правило 4) — чинится код.</code></pre>
+<p>В потоке сессии нет отдельного вызова <code>bash sh scripts/check.sh</code>:
+проверку запустил hook.</p>
+<div class="card">
+  <strong>Три дефекта, найденных на реальных прогонах.</strong>
+  1. Плагин вообще не загружался: строка комментария, начавшаяся с
+     <code>*</code> вне блока комментария, роняла модуль при импорте — молча,
+     без ошибки в логах.<br>
+  2. Hook не замечал <code>apply_patch</code>: там нет <code>filePath</code>,
+     только <code>patchText</code>, а пути приходят относительными.<br>
+  3. В отчёт попадал только stdout, а <code>unittest</code> пишет в stderr —
+     агент видел «проверка прошла» при падающем тесте.
+</div>
+<p class="links">
+  <a href=".opencode/plugins/check-after-edit.js">→ .opencode/plugins/check-after-edit.js</a>
+  <a href="docs/HOOK.md">→ docs/HOOK.md</a>
+</p>
+
+<h2 id="evidence">Подтверждения применения</h2>
+<p>Не «файл существует», а реальные вызовы инструментов из потоков
+<code>opencode run --format json</code>. Сырые потоки — в
+<a href="evidence/raw/">evidence/raw/</a>.</p>
+<table>
+  <tr><th>Файл</th><th>Что подтверждает</th></tr>
+  <tr><td><a href="evidence/E1-agents-skill-mcp.md">E1</a></td>
+      <td>в одной сессии: <code>read AGENTS.md</code> → <code>skill submission-audit</code> →
+      <code>read references/rubric-rules.md</code> → <code>rubrica_audit</code> с реальным JSON</td></tr>
+  <tr><td><a href="evidence/E2-mcp-error-input.md">E2</a></td>
+      <td>свой MCP: корректный вызов и два разных ошибочных входа с текстом причины</td></tr>
+  <tr><td><a href="evidence/E3-hook-fail.md">E3</a></td>
+      <td>hook после правки возвращает агенту FAIL с трейсом упавшего теста</td></tr>
+  <tr><td><a href="evidence/E4a-wrong-fix-detected.md">E4a</a></td>
+      <td>агент прочитал правило 4 и всё равно подогнал production-код под неверный тест — PASS, но код сломан</td></tr>
+  <tr><td><a href="evidence/E5-hook-pass-by-rule.md">E5</a></td>
+      <td>тот же сценарий с явным указанием на правило: агент откатал неверный тест, hook дал PASS</td></tr>
+  <tr><td><a href="evidence/E6-feature-b-degradation.md">E6</a></td>
+      <td>фича B: четыре живых сценария, вердикт аудита не меняется при отказе зависимости</td></tr>
+  <tr><td><a href="evidence/raw-B-session.md">raw-B</a></td>
+      <td>сессия агента в worktree: реализация по требованиям + три дефекта, найденных человеком</td></tr>
+  <tr><td><a href="evidence/E7-final-audit.md">E7</a></td>
+      <td>handoff: новая сессия восстанавливает состояние и сверяет его с фактическим прогоном</td></tr>
+</table>
+
+<h2 id="reflection">Рефлексия: коротко</h2>
+<ul>
+  <li><strong>Помогло:</strong> runner как единственная точка проверки — у
+  агента не осталось выбора, что запускать; ошибка как данные, а не как
+  исключение (иначе агент не видит причину).</li>
+  <li><strong>Помогло с оговоркой:</strong> правило 4 в style guide. Агент его
+  прочитал и нарушил. Помогло не правило, а то, что человек увидел diff.
+  Проверка умеет сказать «зелёно», но не умеет сказать «правильно».</li>
+  <li><strong>Мешало:</strong> установлен opencode 1.18.30, а слайды рассчитаны
+  на 2.0.20 — API плагина другой; MCP SDK для Python различается между
+  ветками (<code>FastMCP</code> против <code>MCPServer</code>).</li>
+  <li><strong>Дороже всего:</strong> диагностика невидимых дефектов hook'а.
+  «Плагин лежит в правильной папке» и «плагин работает» — разные утверждения.</li>
+  <li><strong>Вмешивался:</strong> трижды — на зелёную проверку со сломанной
+  семантикой, на тест, уходивший в сеть, и на умолчания, указывающие на
+  чужой API.</li>
+</ul>
+<p class="links"><a href="reflection.md">→ reflection.md целиком</a></p>
+
+<h2>Проверка перед сдачей</h2>
+<pre><code>$ sh scripts/check.sh
+compileall: ok
+Ran 74 tests in 0.227s
+OK
+
+$ make audit
+баллы:  17/17   провалено: 0   blocker'ов: 0     EXIT=0
+
+$ opencode debug skill      # submission-audit найден
+$ opencode mcp list         # rubrica connected</code></pre>
+
+<p class="sub" style="margin-top:40px; border-top:1px solid var(--line); padding-top:16px">
+  Все ссылки относительные и ведут на файлы этой папки с локального диска.
+  Ключ API лежит только в <code>.env</code> и в переменной <code>VSELLM_API_KEY</code>;
+  в коде, документации и коммитах его нет.
+</p>
+
+</div>
+</body>
+</html>
