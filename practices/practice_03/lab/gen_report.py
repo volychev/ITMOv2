@@ -37,6 +37,28 @@ def get_ollama_list() -> list[dict]:
     return []
 
 
+def get_cpu_model() -> str:
+    """Return CPU model robustly. On Linux, prefer /proc/cpuinfo."""
+    import platform as _pl
+    from pathlib import Path as _Path
+    try:
+        if _pl.system() == "Linux":
+            cpuinfo = _Path('/proc/cpuinfo')
+            if cpuinfo.exists():
+                for line in cpuinfo.read_text(encoding='utf-8', errors='ignore').splitlines():
+                    if 'model name' in line:
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            name = parts[1].strip()
+                            if name:
+                                return name
+        import platform
+        return platform.processor() or 'n/a'
+    except Exception:
+        import platform
+        return platform.processor() or 'n/a'
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--output", required=True)
@@ -51,7 +73,7 @@ def main() -> None:
     lines.append("")
     lines.append("## Hardware/Software")
     lines.append(f"Python: {platform.python_version()} on {platform.system()} {platform.release()} ({platform.machine()})")
-    lines.append(f"CPU: {platform.processor() or 'n/a'}")
+    lines.append(f"CPU: {get_cpu_model()}")
     # GPU is environment-specific; we avoid heavy calls. Mention presence of nvidia-smi if available.
     lines.append(f"nvidia-smi: {'yes' if shutil.which('nvidia-smi') else 'no'}")
     lines.append("")
