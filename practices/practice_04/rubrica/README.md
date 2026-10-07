@@ -13,7 +13,7 @@ CLI, который проверяет папку сдачи по рубрике
 
 ```sh
 make install          # venv + зависимости
-sh scripts/check.sh   # проверки кода: compileall + 75 тестов
+sh scripts/check.sh   # проверки кода: compileall + 74 теста
 make audit            # аудит папки сдачи по рубрике
 ```
 
@@ -64,7 +64,7 @@ make audit            # аудит папки сдачи по рубрике
 
 ```
 src/rubrica/       validate.py (A), spec.py, core.py, cli.py, narrative.py (B)
-tests/             75 тестов на публичные интерфейсы
+tests/             74 теста на публичные интерфейсы
 mcp/rubrica_mcp/   собственный MCP-сервер, один tool
 rubrics/           рубрика сдачи
 scripts/           check.sh (runner), mcp-server.sh
