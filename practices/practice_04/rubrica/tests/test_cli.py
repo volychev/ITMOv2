@@ -1,13 +1,16 @@
 import io
 import json
+import os
 import sys
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from rubrica.cli import main  # noqa: E402
+from rubrica.narrative import NarrativeUnavailable  # noqa: E402
 
 RUBRIC = """id: demo
 title: Demo rubric
@@ -68,6 +71,34 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 0)
         payload = json.loads(out)
         self.assertEqual(payload["spec"], "demo")
+        self.assertEqual(payload["score"], 1)
+
+    def test_narrative_flag_skips_network_when_absent(self):
+        # Без --narrative зависимость не трогается: аудит идёт по-старому.
+        (self.submission / "README.md").write_text("hi", encoding="utf-8")
+        with mock.patch("rubrica.cli.request_narrative") as narrative:
+            code, out, _ = run([str(self.submission), "--spec", str(self.spec)])
+        self.assertEqual(code, 0)
+        self.assertIn("PASS", out)
+        narrative.assert_not_called()
+
+    def test_json_contains_narrative_fields_when_requested(self):
+        # С --narrative в JSON появляются narrative и narrative_error.
+        # Окружение изолируется: иначе при наличии VSELLM_API_KEY в переменных
+        # разработчика тест ушёл бы в сеть и зависел от чужой машины.
+        (self.submission / "README.md").write_text("hi", encoding="utf-8")
+        clean = {k: v for k, v in os.environ.items() if k != "VSELLM_API_KEY"}
+        with mock.patch.dict(os.environ, clean, clear=True):
+            with mock.patch("rubrica.cli.request_narrative") as narrative:
+                narrative.side_effect = NarrativeUnavailable("заглушка: зависимость недоступна")
+                code, out, _ = run([
+                    str(self.submission), "--spec", str(self.spec), "--json", "--narrative"
+                ])
+        self.assertEqual(code, 3)
+        payload = json.loads(out)
+        self.assertIsNone(payload["narrative"])
+        self.assertEqual(payload["narrative_error"], "заглушка: зависимость недоступна")
+        self.assertEqual(payload["exit_code"], 0)
         self.assertEqual(payload["score"], 1)
 
     def test_max_findings_flag_is_validated(self):

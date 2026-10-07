@@ -1,4 +1,4 @@
-.PHONY: install check test audit audit-json
+.PHONY: install check test audit audit-json audit-narrative
 
 PY := $(CURDIR)/.venv/bin/python
 
@@ -12,8 +12,11 @@ check:
 test: check
 
 audit:
-	@$(PY) -m rubrica.cli .. --spec rubrics/practice_04.yaml
+	@$(PY) -m rubrica.cli . --spec rubrics/practice_04.yaml
 
 audit-json:
-	@$(PY) -m rubrica.cli .. --spec rubrics/practice_04.yaml --json
+	@$(PY) -m rubrica.cli . --spec rubrics/practice_04.yaml --json
+
+audit-narrative:
+	@$(PY) -m rubrica.cli . --spec rubrics/practice_04.yaml --narrative
 

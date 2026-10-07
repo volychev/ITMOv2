@@ -15,6 +15,7 @@ from . import __version__
 from .core import Report, audit
 from .spec import SpecError, load_spec
 from .validate import InputRejected, validate_all
+from .narrative import NarrativeUnavailable, request_narrative
 
 DEFAULT_SPEC = Path(__file__).resolve().parents[2] / "rubrics" / "practice_04.yaml"
 
@@ -25,6 +26,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spec", default=None, help="путь к рубрике YAML (по умолчанию rubrics/practice_04.yaml)")
     parser.add_argument("--json", action="store_true", dest="json_output", help="машиночитаемый вывод")
     parser.add_argument("--max-findings", type=int, default=200, help="потолок числа правил")
+    # Optional narrative enrichment flags. Without --narrative dependency is never touched.
+    parser.add_argument("--narrative", action="store_true", help="добавить текстовую рецензию (опционально)")
+    parser.add_argument("--model", default=None, help="модель для OpenAI-совместимого endpoint")
+    parser.add_argument("--timeout", type=float, default=None, help="таймаут обращения к endpoint, сек")
     parser.add_argument("--version", action="version", version=f"rubrica {__version__}")
     return parser
 
@@ -71,12 +76,28 @@ def main(argv: list[str] | None = None) -> int:
     report = audit(spec, validated.target)
     report.warnings.extend(validated.notes)
 
+    # Optional narrative enrichment
+    narrative_text: str | None = None
+    narrative_error: str | None = None
+    exit_code = report.exit_code
+    if args.narrative:
+        try:
+            narrative_text = request_narrative(report.as_dict(), model=args.model, timeout=args.timeout)
+        except NarrativeUnavailable as exc:
+            # Per contract: audit result remains, but program returns code 3 to signal narrative unavailable
+            narrative_error = str(exc)
+            exit_code = 3
+
     if args.json_output:
-        print(json.dumps(report.as_dict(), ensure_ascii=False, indent=2))
+        payload = report.as_dict()
+        payload["narrative"] = narrative_text
+        payload["narrative_error"] = narrative_error
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(render_text(report, args.max_findings))
+        # Text mode: keep existing output format; we don't print narrative to avoid breaking expectations
 
-    return report.exit_code
+    return exit_code
 
 
 if __name__ == "__main__":
