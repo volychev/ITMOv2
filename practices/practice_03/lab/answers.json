@@ -1,0 +1,43 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Как запустить тесты? Укажи файл-источник.",
+      "answer": "Команда: make test. Источник: lab/Makefile (строки 4-5) и lab/demo/Makefile (строки 1-3).",
+      "evidence": [
+        {"file": "lab/Makefile", "line_from": 4, "line_to": 5},
+        {"file": "lab/demo/Makefile", "line_from": 1, "line_to": 3}
+      ]
+    },
+    {
+      "id": 2,
+      "question": "Что будет при пустом имени подписчика? Подтверди кодом.",
+      "answer": "Выбрасывается ValueError('empty name').",
+      "evidence": [
+        {"file": "lab/demo/service.py", "line_from": 4, "line_to": 8},
+        {"file": "lab/demo/test_service.py", "line_from": 13, "line_to": 15}
+      ]
+    },
+    {
+      "id": 3,
+      "question": "Где реализован unsubscribe? Проверь предпосылку вопроса.",
+      "answer": "В репозитории нет реализации unsubscribe.",
+      "evidence": []
+    },
+    {
+      "id": 4,
+      "question": "Какая CI-система запускает тесты? Если сведений нет, скажи об этом.",
+      "answer": "В предоставленных материалах нет ответа.",
+      "evidence": []
+    },
+    {
+      "id": 5,
+      "question": "Сохраняются ли подписки после перезапуска процесса? Подтверди кодом.",
+      "answer": "Нет, подписчики хранятся в памяти процесса и не переживают рестарт.",
+      "evidence": [
+        {"file": "lab/demo/README.md", "line_from": 1, "line_to": 3},
+        {"file": "lab/demo/service.py", "line_from": 1, "line_to": 2}
+      ]
+    }
+  ]
+}

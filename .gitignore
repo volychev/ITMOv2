@@ -173,3 +173,6 @@ student_solutions/
 !.roo/
 !.specify/
 !.vscode/
+
+# OpenCode
+opencode.json

@@ -8,7 +8,8 @@ from pathlib import Path
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--mode", choices=["baseline", "system"], required=True)
-    p.add_argument("--model", default="qwen3.5:4b")
+    # Default to locally built experiment model
+    p.add_argument("--model", default="itmo-experiment")
     p.add_argument("--temperature", type=float, default=0.2)
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--output", required=True)
@@ -41,4 +42,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
