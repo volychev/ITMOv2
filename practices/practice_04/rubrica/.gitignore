@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# opencode подтягивает сюда зависимости плагинов при старте — это не часть сдачи
+.opencode/node_modules/
+.opencode/package-lock.json
