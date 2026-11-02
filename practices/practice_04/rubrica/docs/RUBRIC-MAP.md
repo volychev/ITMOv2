@@ -50,11 +50,11 @@ rubrica/
 ├── Makefile                       install / check / audit
 ├── scripts/check.sh               runner, единственная точка проверки
 ├── scripts/mcp-server.sh          запуск MCP в stdio
-├── src/rubrica/                   validate (A), spec, core, cli, narrative (B)
-│   └── narrative.py добавлен фичей B
+├── src/rubrica/                   validate (A), spec, core, cli, narrative (B), report_html (C)
+│   └── narrative.py добавлен фичей B, report_html.py — фичей C
 ├── mcp/rubrica_mcp/server.py      собственный MCP-сервер
 ├── rubrics/practice_04.yaml       рубрика сдачи
-├── tests/                         75 тестов
+├── tests/                         113 тестов
 ├── .opencode/skills/submission-audit/   skill + references + scripts
 ├── .opencode/plugins/check-after-edit.js  hook после правки
 ├── evidence/                      подтверждения применения

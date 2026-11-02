@@ -1,0 +1,34 @@
+$ openspec --version
+1.14.1
+
+$ openspec init --tools opencode --language ru --no-animation
+(инициализация выполнена в отдельном worktree baseline c7c60a5)
+
+$ openspec new change html-report --description "Автономный HTML-отчёт rubrica --html PATH"
+Created change at openspec/changes/html-report/
+
+$ openspec status --change html-report
+- Loading change status...
+Change: html-report
+Schema: spec-driven
+Change root: /tmp/opencode/openspec-baseline/practices/practice_04/rubrica/openspec/changes/html-report
+Progress: 4/4 artifacts complete
+
+[x] proposal
+[x] specs
+[x] design
+[x] tasks
+
+All planning artifacts complete!
+Next: openspec instructions apply --change "html-report" --json
+
+$ openspec validate html-report --strict
+Change 'html-report' is valid
+
+$ find openspec/changes/html-report -type f | sort
+openspec/changes/html-report/design.md
+openspec/changes/html-report/.openspec.yaml
+openspec/changes/html-report/proposal.md
+openspec/changes/html-report/README.md
+openspec/changes/html-report/specs/html-report/spec.md
+openspec/changes/html-report/tasks.md
