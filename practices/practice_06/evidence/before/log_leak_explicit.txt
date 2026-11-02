@@ -1,0 +1,30 @@
+### Original /debug/logs after one authenticated request
+token used: 717b3df4deef4ca9879aead6c33f3024
+[
+  {
+    "method": "POST",
+    "target": "/login",
+    "body": {
+      "username": "alice",
+      "password": "learn-alice"
+    },
+    "headers": {
+      "Host": "127.0.0.1:8067",
+      "User-Agent": "curl/8.18.0",
+      "Accept": "*/*",
+      "Content-Type": "application/json",
+      "Content-Length": "45"
+    }
+  },
+  {
+    "method": "GET",
+    "target": "/orders",
+    "body": {},
+    "headers": {
+      "Host": "127.0.0.1:8067",
+      "User-Agent": "curl/8.18.0",
+      "Accept": "*/*",
+      "X-Token": "717b3df4deef4ca9879aead6c33f3024"
+    }
+  }
+]

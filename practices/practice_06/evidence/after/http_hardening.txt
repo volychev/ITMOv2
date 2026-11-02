@@ -1,0 +1,30 @@
+### Security headers
+HTTP/1.0 200 OK
+Server: MiniShop 
+Date: Mon, 02 Nov 2026 12:26:47 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 16
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+
+
+### POST without application/json
+HTTP/1.0 415 Unsupported Media Type
+Server: MiniShop 
+Date: Mon, 02 Nov 2026 12:26:47 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 38
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+
+
+### Oversized body
+413 {"error": "request too large"}
