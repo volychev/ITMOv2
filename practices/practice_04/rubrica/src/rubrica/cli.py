@@ -16,6 +16,7 @@ from .core import Report, audit
 from .spec import SpecError, load_spec
 from .validate import InputRejected, validate_all
 from .narrative import NarrativeUnavailable, request_narrative
+from .report_html import ExportRejected, export_html, resolve_output_path
 
 DEFAULT_SPEC = Path(__file__).resolve().parents[2] / "rubrics" / "practice_04.yaml"
 
@@ -26,6 +27,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spec", default=None, help="путь к рубрике YAML (по умолчанию rubrics/practice_04.yaml)")
     parser.add_argument("--json", action="store_true", dest="json_output", help="машиночитаемый вывод")
     parser.add_argument("--max-findings", type=int, default=200, help="потолок числа правил")
+    parser.add_argument(
+        "--html",
+        default=None,
+        metavar="PATH",
+        help="сохранить автономный HTML-отчёт в PATH (.html или .htm)",
+    )
     # Optional narrative enrichment flags. Without --narrative dependency is never touched.
     parser.add_argument("--narrative", action="store_true", help="добавить текстовую рецензию (опционально)")
     parser.add_argument("--model", default=None, help="модель для OpenAI-совместимого endpoint")
@@ -66,6 +73,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ОТКАЗ: {exc}", file=sys.stderr)
         return 2
 
+    html_path = None
+    if args.html is not None:
+        try:
+            html_path = resolve_output_path(args.html)
+        except ExportRejected as exc:
+            print(f"ОТКАЗ: HTML-отчёт не записан — {exc}", file=sys.stderr)
+            return 2
+
     spec_path = validated.spec_path or DEFAULT_SPEC
     try:
         spec = load_spec(spec_path)
@@ -96,6 +111,19 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(render_text(report, args.max_findings))
         # Text mode: keep existing output format; we don't print narrative to avoid breaking expectations
+
+    if html_path is not None:
+        try:
+            written = export_html(
+                report,
+                html_path,
+                narrative=narrative_text,
+                narrative_error=narrative_error,
+            )
+        except ExportRejected as exc:
+            print(f"ОТКАЗ: HTML-отчёт не записан — {exc}", file=sys.stderr)
+            return 2
+        print(f"HTML-отчёт: {written}", file=sys.stderr)
 
     return exit_code
 

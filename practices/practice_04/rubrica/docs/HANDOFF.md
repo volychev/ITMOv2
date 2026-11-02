@@ -16,6 +16,10 @@
   появляется код возврата 3.
 - **Среда агента** — `AGENTS.md`, skill `submission-audit` с тремя reference,
   MCP-сервер `rubrica_audit`, hook `check-after-edit`, runner `scripts/check.sh`.
+- **Фича C** — автономный HTML-отчёт. `src/rubrica/report_html.py` и `--html`
+  в `cli.py`: один файл с inline CSS/JS, поиск, фильтры, сортировка, атомарная
+  запись. Контракт — `specs/001-html-report/contracts/ui-logic.md`, сравнение
+  SDD-фреймворков — `docs/sdd-comparison.md`.
 
 Фича B делалась в отдельном worktree на ветке `practice-04-b` и слита обратно
 через `git merge --ff-only`. Подробности — `evidence/E6-feature-b-degradation.md`.
@@ -23,7 +27,7 @@
 ## Текущее состояние проверок
 
 ```sh
-sh scripts/check.sh    # 74 теста, ~1.2 с, exit 0
+sh scripts/check.sh    # 113 тестов, exit 0
 make audit             # рубрика по текущей папке: 17/17, exit 0
 ```
 
@@ -60,7 +64,7 @@ make audit             # рубрика по текущей папке: 17/17, e
 ```sh
 opencode debug skill     # submission-audit найден
 opencode mcp list        # rubrica connected
-sh scripts/check.sh      # 74 теста, OK
+sh scripts/check.sh      # 113 тестов, OK
 ```
 
 Если все три ответа верные — среда собрана и пригодна для следующей задачи.
